@@ -42,6 +42,21 @@ a.app:active{transform:scale(.98)}
 #splash{position:fixed;inset:0;z-index:100;background:#FAF6F0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;transition:opacity .25s ease}
 #splash.out{opacity:0;pointer-events:none}#splash svg{width:260px;max-width:76vw;height:auto}
 #splash .spin{width:26px;height:26px;border-radius:50%;border:3px solid #E6D8CB;border-top-color:#8B4F2E;animation:gnspin .9s linear infinite}@keyframes gnspin{to{transform:rotate(360deg)}}
+/* Needs attention, under the cards (31/10/2026): loaded in the background from the Good Nature app */
+#att{max-width:1100px;margin:22px auto 0}
+.att{background:#fff;border:1px solid var(--line);border-inline-start:4px solid #a05a00;border-radius:14px;padding:12px 16px 4px;text-align:start}
+.atth{display:flex;align-items:center;gap:8px;width:100%;background:none;border:0;padding:0 0 4px;margin:0;font:inherit;color:inherit;cursor:pointer;text-align:start}
+.atth h3{margin:0;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#a05a00}
+[dir=rtl] .atth h3{letter-spacing:0;font-size:13px}
+.atth .cnt{min-width:22px;height:20px;padding:0 7px;border-radius:999px;background:#fff4e0;color:#a05a00;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center}
+.atth .chev{margin-inline-start:auto;color:var(--mut);font-size:16px;transition:transform .2s ease}
+.att.closed{padding-bottom:10px}.att.closed .ail{display:none}.att.closed .chev{transform:rotate(-90deg)}[dir=rtl] .att.closed .chev{transform:rotate(90deg)}
+.ai{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);line-height:1.45;font-size:14px}
+.ail .ai:first-child{border-top:0}
+.ai .dot{flex-shrink:0;width:8px;height:8px;border-radius:50%;background:#a05a00;margin-top:6px}.ai.hot .dot{background:#b3261e}
+.ai .tx{flex:1;min-width:0;overflow-wrap:anywhere}.ai .gt{flex-shrink:0;color:var(--mut)}[dir=rtl] .ai .gt{transform:scaleX(-1)}
+.ai:hover .tx{color:var(--deep);text-decoration:underline}
+.att.ok{border:0;background:#e6f4ea;color:#1e7d45;font-weight:600;font-size:13px;padding:12px 16px}
 @media (max-width:640px){main{padding:18px 14px}.app{flex:1 1 100%;padding:22px 18px}}
 </style>
 </head>
@@ -59,6 +74,7 @@ a.app:active{transform:scale(.98)}
     <a class="app" href="https://script.google.com/macros/s/AKfycbwyNZJJtFI2PeFNlYO72dzycLNXLt4FmhfEAtv-_JCA3bOs6RJ2tMcM4LW5Vbb51kFNgg/exec"><div class="icon">📦</div><div class="name" data-t="st">Store</div><div class="what" data-t="stD">Outlet requisitions, stock on hand and counts.</div><div class="go" data-t="open">Open</div></a>
     <a class="app" href="https://script.google.com/a/macros/vaquerohospitality.com/s/AKfycbyzIGflVAMCsM7ZyjPOtsBwZIL8vFcDLSkn2Hnl4R0WDrg6o-QwQX7pYgVGBPqiUd1z/exec"><div class="icon">👥</div><div class="name" data-t="hr">HR</div><div class="what" data-t="hrD">Payroll, employees, advances, leave and payslips.</div><div class="go" data-t="open">Open</div></a>
   </div>
+  <div id="att"></div>
   <div id="hint"></div>
   <div class="foot">Good Nature Supplies</div>
 </main>
@@ -98,6 +114,58 @@ Array.prototype.forEach.call(document.querySelectorAll('a.app'), function (a) {
   a.addEventListener('click', function (e) { e.preventDefault(); splash.className = ''; location.href = a.href; });
 });
 window.addEventListener('pageshow', function (e) { if (e.persisted) splash.className = 'out'; });
+/* Needs attention under the cards (31/10/2026). The page opens straight away; the list is fetched in the background from
+   the Good Nature app (only what this person can act on) and kept on the device, so it shows at once the next time.
+   iPhone Safari blocks the background fetch, so there the cards show without it. */
+var GN_APP = 'https://script.google.com/macros/s/AKfycbyv1ZFcT8-QKtdlZDWh7YMq_MehWu2wDYcS-s3Miv2Mg9CoAodUHfuV62aFeokdMyJWIg/exec';
+var AT = {
+  en: { att: 'Needs attention', clear: 'All clear — nothing is waiting for you.',
+    stPrep: '{n} store requests to prepare', stPrep1: '1 store request to prepare',
+    stPost: '{n} received requests to post in ERPNext', stPost1: '1 received request to post in ERPNext',
+    stRecv: '{n} deliveries issued to you — confirm when received', stRecv1: '1 delivery issued to you — confirm when received',
+    hfAppr: '{n} House Fund entries waiting for approval', hfAppr1: '1 House Fund entry waiting for approval',
+    hfRej: '{n} House Fund entries were rejected — fix and resubmit', hfRej1: '1 House Fund entry was rejected — fix and resubmit',
+    erpMore: '{n} more ERPNext alerts in GN Finance', erpMore1: '1 more ERPNext alert in GN Finance' },
+  ar: { att: 'يحتاج انتباهك', clear: 'كل شيء تمام — لا يوجد شيء بانتظارك.',
+    stPrep: '{n} طلبات مخزن للتجهيز', stPrep1: 'طلب مخزن واحد للتجهيز',
+    stPost: '{n} طلبات مستلمة للترحيل على ERPNext', stPost1: 'طلب مستلم واحد للترحيل على ERPNext',
+    stRecv: '{n} طلبات صُرفت لك — أكد عند الاستلام', stRecv1: 'طلب واحد صُرف لك — أكد عند الاستلام',
+    hfAppr: '{n} قيود في العهدة بانتظار الموافقة', hfAppr1: 'قيد واحد في العهدة بانتظار الموافقة',
+    hfRej: '{n} قيود مرفوضة في العهدة — صححها وأعد إرسالها', hfRej1: 'قيد مرفوض في العهدة — صححه وأعد إرساله',
+    erpMore: '{n} تنبيهات أخرى من ERPNext في المالية', erpMore1: 'تنبيه آخر من ERPNext في المالية' }
+};
+function at(k) { return (AT[lang] && AT[lang][k]) || AT.en[k] || k; }
+function atn(k, n) { return n === 1 ? at(k + '1') : at(k).replace('{n}', n); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+var attState = null, attClosed = false;
+try { attState = JSON.parse(localStorage.getItem('gn_att') || 'null'); attClosed = localStorage.getItem('gn_att_closed') === '1'; } catch (e) {}
+function renderAtt() {
+  var box = document.getElementById('att'), st = attState;
+  if (!st || !st.att) { box.innerHTML = ''; return; }
+  if (!st.att.length) { box.innerHTML = '<div class="att ok">' + esc(at('clear')) + '</div>'; return; }
+  var cnt = st.att.reduce(function (s, a) { return s + (a[0] === 'erpMore' ? a[1] : 1); }, 0);
+  box.innerHTML = '<div class="att' + (attClosed ? ' closed' : '') + '"><button type="button" class="atth" id="atth" aria-expanded="' + !attClosed + '"><h3>' + esc(at('att')) + '</h3><span class="cnt">' + cnt + '</span><span class="chev">▾</span></button><div class="ail">' +
+    st.att.map(function (a) {
+      var tx = a[0] === 'erp' ? a[3] : atn(a[0], a[1]), hot = a[0] === 'erp' || a[0] === 'hfRej';
+      return '<a class="ai' + (hot ? ' hot' : '') + '" href="' + esc(a[2]) + '"><span class="dot"></span><span class="tx" dir="auto">' + esc(tx) + '</span><span class="gt">→</span></a>';
+    }).join('') + '</div></div>';
+  document.getElementById('atth').onclick = function () { attClosed = !attClosed; try { localStorage.setItem('gn_att_closed', attClosed ? '1' : '0'); } catch (e) {} renderAtt(); };
+  Array.prototype.forEach.call(box.querySelectorAll('a.ai'), function (a) {
+    a.addEventListener('click', function (e) { e.preventDefault(); splash.className = ''; location.href = a.href + (st.email && a.href.indexOf('authuser=') < 0 ? (a.href.indexOf('?') < 0 ? '?' : '&') + 'authuser=' + encodeURIComponent(st.email) : ''); });
+  });
+}
+window.gnAtt = function (st) {
+  if (!st || st.error || !st.email) return;
+  attState = st; try { localStorage.setItem('gn_att', JSON.stringify(st)); } catch (e) {}
+  renderAtt();
+};
+renderAtt();
+document.getElementById('lang').addEventListener('click', renderAtt);
+(function () {
+  var s = document.createElement('script');
+  s.src = GN_APP + '?api=state&callback=gnAtt' + (attState && attState.email ? '&authuser=' + encodeURIComponent(attState.email) : '') + '&t=' + Date.now();
+  s.async = true; document.body.appendChild(s);
+})();
 </script>
 <script src="https://goodnaturesupplies.github.io/gn-assistant.js" data-app="Home" defer></script>
 </body>
