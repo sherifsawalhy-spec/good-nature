@@ -58,6 +58,7 @@ a.app:active{transform:scale(.98)}
 .ai:hover .tx{color:var(--deep);text-decoration:underline}
 .att.ok{border:0;background:#e6f4ea;color:#1e7d45;font-weight:600;font-size:13px;padding:12px 16px}
 @media (max-width:640px){main{padding:18px 14px}.app{flex:1 1 100%;padding:22px 18px}}
+.acct{text-align:center;font-size:12px;opacity:.8;margin-top:14px;line-height:1.8}.acct button{color:inherit;text-decoration:underline;background:none;border:0;font:inherit;cursor:pointer;padding:0}.acct input{font:inherit;padding:6px 8px;border:1px solid #c9b8a6;border-radius:8px;width:230px;max-width:62vw}.acct form button{text-decoration:none;border:1px solid #8B4F2E;border-radius:8px;padding:6px 12px;margin-inline-start:6px}
 </style>
 </head>
 <body>
@@ -76,6 +77,7 @@ a.app:active{transform:scale(.98)}
   </div>
   <div id="att"></div>
   <div id="hint"></div>
+  <div class="acct" id="acct"></div>
   <div class="foot">Good Nature Supplies</div>
 </main>
 <script>
@@ -111,7 +113,7 @@ document.getElementById('lang').addEventListener('click', function () {
 /* Open apps in this same window (a plain link from the Home Screen app would open a separate browser on iPhone), behind the splash. */
 var splash = document.getElementById('splash');
 Array.prototype.forEach.call(document.querySelectorAll('a.app'), function (a) {
-  a.addEventListener('click', function (e) { e.preventDefault(); splash.className = ''; location.href = a.href; });
+  a.addEventListener('click', function (e) { e.preventDefault(); splash.className = ''; location.href = withAcct(a.href); });
 });
 window.addEventListener('pageshow', function (e) { if (e.persisted) splash.className = 'out'; });
 /* Needs attention under the cards (31/10/2026). The page opens straight away; the list is fetched in the background from
@@ -151,19 +153,41 @@ function renderAtt() {
     }).join('') + '</div></div>';
   document.getElementById('atth').onclick = function () { attClosed = !attClosed; try { localStorage.setItem('gn_att_closed', attClosed ? '1' : '0'); } catch (e) {} renderAtt(); };
   Array.prototype.forEach.call(box.querySelectorAll('a.ai'), function (a) {
-    a.addEventListener('click', function (e) { e.preventDefault(); splash.className = ''; location.href = a.href + (st.email && a.href.indexOf('authuser=') < 0 ? (a.href.indexOf('?') < 0 ? '?' : '&') + 'authuser=' + encodeURIComponent(st.email) : ''); });
+    a.addEventListener('click', function (e) { e.preventDefault(); splash.className = ''; location.href = withAcct(a.href); });
   });
 }
 window.gnAtt = function (st) {
   if (!st || st.error || !st.email) return;
   attState = st; try { localStorage.setItem('gn_att', JSON.stringify(st)); } catch (e) {}
-  renderAtt();
+  renderAtt(); renderAcct();
 };
-renderAtt();
+/* Account (1/11/2026): apps open with the same Google account as this page. "Change account" saves the account to use on this device
+   (for people signed in to several Google accounts, e.g. a Gmail plus a work account). */
+function acct() { var u = ''; try { u = localStorage.getItem('gn_user') || ''; } catch (e) {} return u || (attState && attState.email) || ''; }
+function withAcct(h) { var u = acct(); return u && h.indexOf('authuser=') < 0 ? h + (h.indexOf('?') < 0 ? '?' : '&') + 'authuser=' + encodeURIComponent(u) : h; }
+var AC = { en: { as: 'Signed in as', chg: 'Change account', save: 'Save', ph: 'Your Google email' }, ar: { as: 'الحساب:', chg: 'تغيير الحساب', save: 'حفظ', ph: 'بريدك على جوجل' } };
+function ac(k) { return (AC[lang] && AC[lang][k]) || AC.en[k]; }
+function renderAcct(edit) {
+  var box = document.getElementById('acct'), u = acct();
+  if (edit) {
+    box.innerHTML = '<form id="acf"><input id="acin" type="email" dir="ltr" placeholder="' + esc(ac('ph')) + '" value="' + esc(u) + '"><button type="submit">' + esc(ac('save')) + '</button></form>';
+    document.getElementById('acin').focus();
+    document.getElementById('acf').onsubmit = function (e) {
+      e.preventDefault(); var v = document.getElementById('acin').value.trim().toLowerCase();
+      try { if (v) localStorage.setItem('gn_user', v); else localStorage.removeItem('gn_user'); localStorage.removeItem('gn_att'); } catch (x) {}
+      location.reload();
+    };
+    return;
+  }
+  box.innerHTML = (u ? esc(ac('as')) + ' <span dir="ltr">' + esc(u) + '</span> · ' : '') + '<button type="button" id="acb">' + esc(ac('chg')) + '</button>';
+  document.getElementById('acb').onclick = function () { renderAcct(true); };
+}
+renderAtt(); renderAcct();
+document.getElementById('lang').addEventListener('click', function () { renderAcct(); });
 document.getElementById('lang').addEventListener('click', renderAtt);
 (function () {
   var s = document.createElement('script');
-  s.src = GN_APP + '?api=state&callback=gnAtt' + (attState && attState.email ? '&authuser=' + encodeURIComponent(attState.email) : '') + '&t=' + Date.now();
+  s.src = GN_APP + '?api=state&callback=gnAtt' + (acct() ? '&authuser=' + encodeURIComponent(acct()) : '') + '&t=' + Date.now();
   s.async = true; document.body.appendChild(s);
 })();
 </script>
